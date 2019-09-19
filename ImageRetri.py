@@ -25,11 +25,15 @@ class ImageRetri():
             for file in files:
                 if file[-3:] == 'jpg':
                     dataset.append(root + '/' + file)
+        print("原图像特征计算...")
+        featA = self.getFeat(queryImg)
 
         similarity = {}
         for imgName in dataset:
             img = cv2.imread(imgName)
-            similarity[imgName] = self.CosSim(queryImg, img)
+            print("目标图像(%s)特征计算..." %imgName)
+            featB = self.getFeat(img)
+            similarity[imgName] = self.CosSim(featA, featB)
 
         res = sorted(similarity.items(), key=lambda x: x[1], reverse=True)
         returnImg = res[:self.returnImgNum]
@@ -44,26 +48,18 @@ class ImageRetri():
         precision = returnTrueNum / self.returnImgNum
         print("recall = %d, precision = %d." % (recall, precision))
 
-    def CosSim(self, queryImg, img):
+    def getFeat(self, img):
+        sift = SIFT(img)
+        siftDescr = sift.start()
+        siftVec = []
+        for item in siftDescr:
+            siftVec.append(item['desc'])
+        siftVec = np.array(siftVec)
+        return siftVec
+
+    def CosSim(self, siftVecA, siftVecB):
         distRatio = 0.6
         count = 0
-        siftA = SIFT(queryImg)
-        siftB = SIFT(img)
-        print("获取原图像特征...")
-        siftDescrA = siftA.start()  # 描述子,x,y,尺度
-        print("原图像特征获取完毕...")
-        print("获取目标图像特征...")
-        siftDescrB = siftB.start()  # 描述子,x,y,尺度
-        print("目标图像特征获取完毕...")
-        siftVecA = []
-        siftVecB = []
-        for item in siftDescrA:
-            siftVecA.append(item['desc'])
-        for item in siftDescrB:
-            siftVecB.append(item['desc'])
-
-        siftVecA = np.array(siftVecA)
-        siftVecB = np.array(siftVecB)
 
         match = np.zeros((len(siftVecA)))
         siftVecB_T = np.transpose(siftVecB)
